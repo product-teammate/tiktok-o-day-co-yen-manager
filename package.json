@@ -9,7 +9,7 @@
     "dev": "nodemon src/server.js"
   },
   "dependencies": {
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^12.8.0",
     "cors": "^2.8.5",
     "date-fns": "^3.3.1",
     "ejs": "^3.1.9",

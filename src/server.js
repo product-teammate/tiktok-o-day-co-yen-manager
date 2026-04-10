@@ -73,9 +73,9 @@ db.exec(`
 // Prepared statements
 const stmts = {
   sources: {
-    all: db.prepare('SELECT * FROM sources ORDER BY created_at DESC'),
+    list: db.prepare('SELECT * FROM sources ORDER BY created_at DESC'),
     byType: db.prepare('SELECT * FROM sources WHERE type = ? ORDER BY created_at DESC'),
-    get: db.prepare('SELECT * FROM sources WHERE id = ?'),
+    getOne: db.prepare('SELECT * FROM sources WHERE id = ?'),
     create: db.prepare('INSERT INTO sources (type, title, description, file_path, content, tags) VALUES (?, ?, ?, ?, ?, ?)'),
     update: db.prepare('UPDATE sources SET title = ?, description = ?, tags = ? WHERE id = ?'),
     delete: db.prepare('DELETE FROM sources WHERE id = ?'),
@@ -144,7 +144,7 @@ const upload = multer({
 // Dashboard stats
 app.get('/api/stats', (req, res) => {
   const videoCounts = stmts.videos.count.all();
-  const totalSources = stmts.sources.all().length;
+  const totalSources = stmts.sources.list.all().length;
   const upcomingPosts = stmts.posts.upcoming.all();
   const stats = { draft: 0, scheduled: 0, published: 0 };
   videoCounts.forEach(v => { stats[v.status] = v.count; });
@@ -154,29 +154,29 @@ app.get('/api/stats', (req, res) => {
 // Sources API
 app.get('/api/sources', (req, res) => {
   const { type } = req.query;
-  res.json(type ? stmts.sources.byType.all(type) : stmts.sources.all());
+  res.json(type ? stmts.sources.byType.all(type) : stmts.sources.list.all());
 });
 
 app.get('/api/sources/:id', (req, res) => {
-  const source = stmts.sources.get(req.params.id);
+  const source = stmts.sources.getOne.get(req.params.id);
   if (!source) return res.status(404).json({ error: 'Source not found' });
   res.json(source);
 });
 
 app.post('/api/sources', (req, res) => {
   const { type, title, description, content, tags } = req.body;
-  const result = stmts.sources.run(type, title, description || '', null, content || '', tags || '');
+  const result = stmts.sources.create.run(type, title, description || '', null, content || '', tags || '');
   res.json({ id: result.lastInsertRowid, message: 'Source created' });
 });
 
 app.put('/api/sources/:id', (req, res) => {
   const { title, description, tags } = req.body;
-  stmts.sources.run(title, description || '', tags || '', req.params.id);
+  stmts.sources.update.run(title, description || '', tags || '', req.params.id);
   res.json({ message: 'Source updated' });
 });
 
 app.delete('/api/sources/:id', (req, res) => {
-  stmts.sources.run(req.params.id);
+  stmts.sources.delete.run(req.params.id);
   res.json({ message: 'Source deleted' });
 });
 
@@ -186,7 +186,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   const { type, title, description, tags } = req.body;
   const fileType = type || (req.file.mimetype.startsWith('video/') ? 'video' : 'image');
   const relPath = path.relative(path.join(__dirname, '..'), req.file.path);
-  const result = stmts.sources.run(fileType, title || req.file.originalname, description || '', relPath, null, tags || '');
+  const result = stmts.sources.create.run(fileType, title || req.file.originalname, description || '', relPath, null, tags || '');
   res.json({ id: result.lastInsertRowid, file_path: relPath, message: 'File uploaded' });
 });
 
@@ -262,7 +262,7 @@ app.get('/', (req, res) => {
   const videoCounts = stmts.videos.count.all();
   const stats = { draft: 0, scheduled: 0, published: 0 };
   videoCounts.forEach(v => { stats[v.status] = v.count; });
-  stats.totalSources = stmts.sources.all().length;
+  stats.totalSources = stmts.sources.list.all().length;
   stats.totalVideos = stmts.videos.all().length;
   stats.totalPosts = stmts.posts.all().length;
   stats.upcoming = stmts.posts.upcoming.all();
@@ -272,7 +272,7 @@ app.get('/', (req, res) => {
 // Sources page
 app.get('/sources', (req, res) => {
   const { type } = req.query;
-  const sources = type ? stmts.sources.byType.all(type) : stmts.sources.all();
+  const sources = type ? stmts.sources.byType.all(type) : stmts.sources.list.all();
   res.render('sources', { sources, type: type || 'all' });
 });
 
@@ -281,7 +281,7 @@ app.get('/videos', (req, res) => {
   const { status } = req.query;
   const videos = status ? stmts.videos.byStatus.all(status) : stmts.videos.all();
   videos.forEach(v => { v.source_ids = JSON.parse(v.source_ids); });
-  res.render('videos', { videos, status: status || 'all', sources: stmts.sources.all() });
+  res.render('videos', { videos, status: status || 'all', sources: stmts.sources.list.all() });
 });
 
 // Posts/Schedule page
