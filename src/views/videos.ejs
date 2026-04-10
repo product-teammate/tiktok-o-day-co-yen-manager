@@ -1,0 +1,107 @@
+<% const body = `
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">🎬 Videos</h1>
+    <div class="flex space-x-2">
+      <a href="?status=all" class="px-3 py-1 text-sm rounded \${status === 'all' ? 'bg-blue-600' : 'bg-gray-700'}">All</a>
+      <a href="?status=draft" class="px-3 py-1 text-sm rounded \${status === 'draft' ? 'bg-yellow-600' : 'bg-gray-700'}">Draft</a>
+      <a href="?status=scheduled" class="px-3 py-1 text-sm rounded \${status === 'scheduled' ? 'bg-blue-600' : 'bg-gray-700'}">Scheduled</a>
+      <a href="?status=published" class="px-3 py-1 text-sm rounded \${status === 'published' ? 'bg-green-600' : 'bg-gray-700'}">Published</a>
+    </div>
+  </div>
+  
+  <!-- Create form -->
+  <div class="bg-gray-800 rounded-lg p-4 mb-6">
+    <h2 class="text-lg font-semibold mb-3">➕ Tạo Video</h2>
+    <form id="videoForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <input type="text" name="title" placeholder="Title" class="bg-gray-700 rounded px-3 py-2 text-sm" required>
+      <select name="status" class="bg-gray-700 rounded px-3 py-2 text-sm">
+        <option value="draft">Draft</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="published">Published</option>
+      </select>
+      <input type="datetime-local" name="publish_date" class="bg-gray-700 rounded px-3 py-2 text-sm" placeholder="Publish date">
+      <input type="text" name="tiktok_url" placeholder="TikTok URL (sau khi đăng)" class="bg-gray-700 rounded px-3 py-2 text-sm">
+      <textarea name="description" placeholder="Description" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-2" rows="2"></textarea>
+      <div class="md:col-span-2">
+        <label class="text-sm text-gray-400">Sources:</label>
+        <div class="flex flex-wrap gap-2 mt-1">
+          ${sources.map(s => \`
+            <label class="inline-flex items-center bg-gray-700 rounded px-2 py-1 text-xs cursor-pointer">
+              <input type="checkbox" name="source_ids" value="\${s.id}" class="mr-1">
+              \${s.type === 'quote' ? '💬' : s.type === 'image' ? '🖼️' : '📹'} \${s.title}
+            </label>
+          \`).join('')}
+        </div>
+      </div>
+      <textarea name="notes" placeholder="Notes" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-2" rows="2"></textarea>
+      <div class="md:col-span-2">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm">💾 Tạo Video</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Videos list -->
+  <div class="space-y-3">
+    ${videos.map(v => \`
+      <div class="bg-gray-800 rounded-lg p-4" data-id="\${v.id}">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center space-x-2">
+              <h3 class="font-medium">\${v.title}</h3>
+              <span class="px-2 py-0.5 text-xs rounded \${v.status === 'draft' ? 'bg-yellow-900 text-yellow-300' : v.status === 'scheduled' ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}">\${v.status}</span>
+            </div>
+            \${v.description ? \`<p class="text-sm text-gray-400 mt-1">\${v.description}</p>\` : ''}
+            \${v.source_ids && v.source_ids.length > 0 ? \`<div class="text-xs text-gray-500 mt-1">Sources: \${v.source_ids.length} item(s)</div>\` : ''}
+            \${v.publish_date ? \`<div class="text-xs text-gray-500 mt-1">📅 \${new Date(v.publish_date).toLocaleString('vi-VN')}</div>\` : ''}
+            \${v.tiktok_url ? \`<div class="text-xs text-blue-400 mt-1"><a href="\${v.tiktok_url}" target="_blank">🔗 TikTok Link</a></div>\` : ''}
+            \${v.notes ? \`<div class="text-xs text-gray-500 mt-1">📝 \${v.notes}</div>\` : ''}
+          </div>
+          <div class="flex space-x-1 ml-4">
+            <button onclick="editVideo(\${v.id})" class="text-xs text-blue-400 hover:text-blue-300">✏️</button>
+            <button onclick="deleteVideo(\${v.id})" class="text-xs text-red-400 hover:text-red-300">🗑️</button>
+          </div>
+        </div>
+      </div>
+    \`).join('')}
+  </div>
+  
+  ${videos.length === 0 ? '<p class="text-gray-500 text-center py-8">Chưa có videos.</p>' : ''}
+</div>
+
+<script>
+document.getElementById('videoForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  const data = {
+    title: fd.get('title'),
+    description: fd.get('description'),
+    status: fd.get('status'),
+    publish_date: fd.get('publish_date') || null,
+    tiktok_url: fd.get('tiktok_url'),
+    notes: fd.get('notes'),
+    source_ids: Array.from(fd.getAll('source_ids')).map(Number)
+  };
+  const res = await api('POST', '/api/videos', data);
+  if (res.error) alert(res.error);
+  else location.reload();
+});
+
+async function deleteVideo(id) {
+  if (!confirm('Xóa video này?')) return;
+  await api('DELETE', '/api/videos/' + id);
+  location.reload();
+}
+
+async function editVideo(id) {
+  const v = await (await fetch('/api/videos/' + id)).json();
+  const newTitle = prompt('Title:', v.title);
+  if (newTitle === null) return;
+  const newStatus = prompt('Status (draft/scheduled/published):', v.status);
+  if (newStatus === null) return;
+  await api('PUT', '/api/videos/' + id, { ...v, title: newTitle, status: newStatus });
+  location.reload();
+}
+</script>
+`; %>
+<%- include('layout', { page: 'videos', title: 'Videos - TikTok Content Manager' }) %>

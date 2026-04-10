@@ -1,0 +1,82 @@
+<% const body = `
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">📅 Schedule</h1>
+  </div>
+  
+  <!-- Create post form -->
+  <div class="bg-gray-800 rounded-lg p-4 mb-6">
+    <h2 class="text-lg font-semibold mb-3">➕ Lên lịch đăng bài</h2>
+    <form id="postForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <select name="video_id" class="bg-gray-700 rounded px-3 py-2 text-sm" required>
+        <option value="">-- Chọn video --</option>
+        ${videos.map(v => \`<option value="\${v.id}">\${v.title} (\${v.status})</option>\`).join('')}
+      </select>
+      <input type="datetime-local" name="scheduled_date" class="bg-gray-700 rounded px-3 py-2 text-sm" required>
+      <input type="text" name="caption" placeholder="Caption cho bài đăng" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-2">
+      <input type="text" name="hashtags" placeholder="Hashtags (cách nhau bởi dấu cách, ví dụ: #nature #peaceful)" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-2">
+      <textarea name="notes" placeholder="Notes" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-2" rows="2"></textarea>
+      <div class="md:col-span-2">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm">💾 Lên lịch</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Schedule list -->
+  <div class="space-y-3">
+    ${posts.map(p => \`
+      <div class="bg-gray-800 rounded-lg p-4" data-id="\${p.id}">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center space-x-2">
+              <h3 class="font-medium">\${p.video_title || 'Unknown'}</h3>
+              <span class="px-2 py-0.5 text-xs rounded \${p.status === 'planned' ? 'bg-blue-900 text-blue-300' : p.status === 'posted' ? 'bg-green-900 text-green-300' : 'bg-gray-600 text-gray-300'}">\${p.status}</span>
+            </div>
+            <div class="text-sm text-gray-400 mt-1">📅 \${new Date(p.scheduled_date).toLocaleString('vi-VN')}</div>
+            \${p.caption ? \`<div class="text-sm mt-1">💬 \${p.caption}</div>\` : ''}
+            \${p.hashtags ? \`<div class="text-sm text-blue-400 mt-1">\${p.hashtags}</div>\` : ''}
+            \${p.notes ? \`<div class="text-xs text-gray-500 mt-1">📝 \${p.notes}</div>\` : ''}
+            \${p.posted_at ? \`<div class="text-xs text-green-400 mt-1">✅ Posted: \${new Date(p.posted_at).toLocaleString('vi-VN')}</div>\` : ''}
+          </div>
+          <div class="flex space-x-1 ml-4">
+            \${p.status === 'planned' ? \`<button onclick="markPosted(\${p.id})" class="text-xs text-green-400 hover:text-green-300">✅</button>\` : ''}
+            <button onclick="deletePost(\${p.id})" class="text-xs text-red-400 hover:text-red-300">🗑️</button>
+          </div>
+        </div>
+      </div>
+    \`).join('')}
+  </div>
+  
+  ${posts.length === 0 ? '<p class="text-gray-500 text-center py-8">Chưa có bài nào được lên lịch.</p>' : ''}
+</div>
+
+<script>
+document.getElementById('postForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  const data = {
+    video_id: parseInt(fd.get('video_id')),
+    scheduled_date: fd.get('scheduled_date'),
+    caption: fd.get('caption'),
+    hashtags: fd.get('hashtags'),
+    notes: fd.get('notes')
+  };
+  const res = await api('POST', '/api/posts', data);
+  if (res.error) alert(res.error);
+  else location.reload();
+});
+
+async function markPosted(id) {
+  const post = await (await fetch('/api/posts/' + id)).json();
+  await api('PUT', '/api/posts/' + id, { ...post, status: 'posted', posted_at: new Date().toISOString() });
+  location.reload();
+}
+
+async function deletePost(id) {
+  if (!confirm('Xóa post này?')) return;
+  await api('DELETE', '/api/posts/' + id);
+  location.reload();
+}
+</script>
+`; %>
+<%- include('layout', { page: 'schedule', title: 'Schedule - TikTok Content Manager' }) %>

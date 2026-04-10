@@ -1,0 +1,109 @@
+<% const body = `
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">📁 Sources</h1>
+    <div class="flex space-x-2">
+      <a href="?type=all" class="px-3 py-1 text-sm rounded \${type === 'all' ? 'bg-blue-600' : 'bg-gray-700'}">All</a>
+      <a href="?type=video" class="px-3 py-1 text-sm rounded \${type === 'video' ? 'bg-blue-600' : 'bg-gray-700'}">Video</a>
+      <a href="?type=image" class="px-3 py-1 text-sm rounded \${type === 'image' ? 'bg-blue-600' : 'bg-gray-700'}">Image</a>
+      <a href="?type=quote" class="px-3 py-1 text-sm rounded \${type === 'quote' ? 'bg-blue-600' : 'bg-gray-700'}">Quote</a>
+    </div>
+  </div>
+  
+  <!-- Add form -->
+  <div class="bg-gray-800 rounded-lg p-4 mb-6">
+    <h2 class="text-lg font-semibold mb-3">➕ Thêm Source</h2>
+    <form id="addSourceForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <select name="type" class="bg-gray-700 rounded px-3 py-2 text-sm">
+        <option value="video">📹 Video</option>
+        <option value="image">🖼️ Image</option>
+        <option value="quote">💬 Quote</option>
+      </select>
+      <input type="text" name="title" placeholder="Title" class="bg-gray-700 rounded px-3 py-2 text-sm" required>
+      <input type="text" name="description" placeholder="Description" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-1">
+      <input type="text" name="tags" placeholder="Tags (comma separated)" class="bg-gray-700 rounded px-3 py-2 text-sm">
+      <textarea name="content" placeholder="Content (cho quote)" class="bg-gray-700 rounded px-3 py-2 text-sm md:col-span-2 hidden" rows="2"></textarea>
+      <div class="md:col-span-2">
+        <input type="file" id="fileInput" name="file" accept="video/*,image/*" class="text-sm">
+      </div>
+      <div class="md:col-span-2 flex space-x-2">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm">💾 Lưu</button>
+        <button type="button" id="uploadBtn" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm">📤 Upload File</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Sources list -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    ${sources.map(s => \`
+      <div class="bg-gray-800 rounded-lg overflow-hidden" data-id="\${s.id}">
+        ${s.type === 'image' && s.file_path ? \`
+          <img src="/uploads/\${s.file_path}" class="w-full h-40 object-cover" alt="\${s.title}">
+        \` : ''}
+        ${s.type === 'video' && s.file_path ? \`
+          <video src="/uploads/\${s.file_path}" class="w-full h-40 object-cover" controls></video>
+        \` : ''}
+        ${s.type === 'quote' ? \`
+          <div class="h-40 flex items-center justify-center p-4 bg-gradient-to-br from-purple-900 to-blue-900">
+            <p class="text-sm italic text-center">"\${s.content || s.title}"</p>
+          </div>
+        \` : ''}
+        <div class="p-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-medium text-sm">\${s.title}</div>
+              <div class="text-xs text-gray-400 mt-1">\${s.description || ''}</div>
+            </div>
+            <span class="px-2 py-0.5 text-xs rounded \${s.type === 'video' ? 'bg-red-900 text-red-300' : s.type === 'image' ? 'bg-green-900 text-green-300' : 'bg-purple-900 text-purple-300'}">\${s.type}</span>
+          </div>
+          ${s.tags ? \`<div class="text-xs text-gray-500 mt-2">\${s.tags}</div>\` : ''}
+          <div class="flex justify-end mt-2 space-x-1">
+            <button onclick="deleteSource(\${s.id})" class="text-xs text-red-400 hover:text-red-300 px-2">🗑️</button>
+          </div>
+        </div>
+      </div>
+    \`).join('')}
+  </div>
+  
+  ${sources.length === 0 ? '<p class="text-gray-500 text-center py-8">Chưa có sources. Thêm ở trên nhé!</p>' : ''}
+</div>
+
+<script>
+document.querySelector('[name="type"]').addEventListener('change', function() {
+  const contentField = document.querySelector('[name="content"]');
+  contentField.classList.toggle('hidden', this.value !== 'quote');
+  document.getElementById('fileInput').classList.toggle('hidden', this.value === 'quote');
+});
+
+document.getElementById('addSourceForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  const type = fd.get('type');
+  if (type === 'quote') {
+    await api('POST', '/api/sources', Object.fromEntries(fd));
+    location.reload();
+  }
+});
+
+document.getElementById('uploadBtn').addEventListener('click', async function() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) return alert('Chọn file trước!');
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('type', document.querySelector('[name="type"]').value);
+  fd.append('title', document.querySelector('[name="title"]').value || file.name);
+  fd.append('tags', document.querySelector('[name="tags"]').value);
+  const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (data.error) alert(data.error);
+  else location.reload();
+});
+
+async function deleteSource(id) {
+  if (!confirm('Xóa source này?')) return;
+  await api('DELETE', '/api/sources/' + id);
+  location.reload();
+}
+</script>
+`; %>
+<%- include('layout', { page: 'sources', title: 'Sources - TikTok Content Manager' }) %>

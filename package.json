@@ -1,0 +1,27 @@
+{
+  "name": "tiktok-o-day-co-yen-manager",
+  "version": "1.0.0",
+  "description": "Content Manager cho TikTok channel 'Ở đây...có yên?'",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "cors": "^2.8.5",
+    "date-fns": "^3.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.3",
+    "express-async-errors": "^3.1.1",
+    "express-basic-auth": "^1.2.1",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

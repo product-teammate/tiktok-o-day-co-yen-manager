@@ -1,0 +1,24 @@
+<nav class="bg-gray-900 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-between h-14">
+      <a href="/" class="flex items-center gap-2 font-bold text-lg hover:text-teal-400 transition-colors">
+        <span class="text-2xl">🌿</span>
+        <span>Ở Đây Có Yên</span>
+      </a>
+      <div class="flex gap-1">
+        <a href="/" class="px-3 py-2 rounded-md text-sm font-medium transition-colors <%= page==='dashboard' ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700' %>">
+          Dashboard
+        </a>
+        <a href="/sources" class="px-3 py-2 rounded-md text-sm font-medium transition-colors <%= page==='sources' ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700' %>">
+          Sources
+        </a>
+        <a href="/videos" class="px-3 py-2 rounded-md text-sm font-medium transition-colors <%= page==='videos' ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700' %>">
+          Videos
+        </a>
+        <a href="/posts" class="px-3 py-2 rounded-md text-sm font-medium transition-colors <%= page==='posts' ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700' %>">
+          Lịch đăng
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>

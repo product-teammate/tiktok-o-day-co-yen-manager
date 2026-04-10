@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'TikTok Content Manager' %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .nav-link.active { @apply text-blue-400 border-b-2 border-blue-400; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <nav class="bg-gray-800 border-b border-gray-700">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-center justify-between h-14">
+        <div class="flex items-center space-x-6">
+          <a href="/" class="text-lg font-bold text-blue-400">🎬 Ở Đây Có Yên</a>
+          <a href="/sources" class="nav-link px-3 py-2 text-sm hover:text-blue-300 <%= page === 'sources' ? 'active' : '' %>">Sources</a>
+          <a href="/videos" class="nav-link px-3 py-2 text-sm hover:text-blue-300 <%= page === 'videos' ? 'active' : '' %>">Videos</a>
+          <a href="/schedule" class="nav-link px-3 py-2 text-sm hover:text-blue-300 <%= page === 'schedule' ? 'active' : '' %>">Schedule</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <%- body %>
+  </main>
+  <script>
+    async function api(method, url, data) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (data) opts.body = JSON.stringify(data);
+      const res = await fetch(url, opts);
+      return res.json();
+    }
+  </script>
+</body>
+</html>
