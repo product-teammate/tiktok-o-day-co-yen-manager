@@ -20,7 +20,7 @@ const DATA_DIR = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // Database
-const db = new Database(path.join(DATA_DIR, 'content.db'), { verbose: console.log });
+const db = new Database(path.join(DATA_DIR, 'content.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
@@ -81,7 +81,7 @@ const stmts = {
     delete: db.prepare('DELETE FROM sources WHERE id = ?'),
   },
   videos: {
-    all: db.prepare('SELECT * FROM videos ORDER BY created_at DESC'),
+    listAll: db.prepare('SELECT * FROM videos ORDER BY created_at DESC'),
     byStatus: db.prepare('SELECT * FROM videos WHERE status = ? ORDER BY created_at DESC'),
     get: db.prepare('SELECT * FROM videos WHERE id = ?'),
     create: db.prepare('INSERT INTO videos (title, description, source_ids, status, publish_date, notes) VALUES (?, ?, ?, ?, ?, ?)'),
@@ -90,13 +90,13 @@ const stmts = {
     count: db.prepare('SELECT status, COUNT(*) as count FROM videos GROUP BY status'),
   },
   posts: {
-    all: db.prepare('SELECT posts.*, videos.title as video_title FROM posts LEFT JOIN videos ON posts.video_id = videos.id ORDER BY posts.scheduled_date DESC'),
+    listAll: db.prepare('SELECT posts.*, videos.title as video_title FROM posts LEFT JOIN videos ON posts.video_id = videos.id ORDER BY posts.scheduled_date DESC'),
     byStatus: db.prepare('SELECT posts.*, videos.title as video_title FROM posts LEFT JOIN videos ON posts.video_id = videos.id WHERE posts.status = ? ORDER BY posts.scheduled_date'),
     get: db.prepare('SELECT posts.*, videos.title as video_title FROM posts LEFT JOIN videos ON posts.video_id = videos.id WHERE posts.id = ?'),
     create: db.prepare('INSERT INTO posts (video_id, scheduled_date, caption, hashtags, notes) VALUES (?, ?, ?, ?, ?)'),
     update: db.prepare('UPDATE posts SET video_id = ?, scheduled_date = ?, status = ?, caption = ?, hashtags = ?, posted_at = ?, notes = ? WHERE id = ?'),
     delete: db.prepare('DELETE FROM posts WHERE id = ?'),
-    upcoming: db.prepare('SELECT posts.*, videos.title as video_title FROM posts LEFT JOIN videos ON posts.video_id = videos.id WHERE posts.status = \'planned\' AND posts.scheduled_date >= datetime(\'now\') ORDER BY posts.scheduled_date LIMIT 10'),
+    upcoming: db.prepare("SELECT posts.*, videos.title as video_title FROM posts LEFT JOIN videos ON posts.video_id = videos.id WHERE posts.status = 'planned' AND posts.scheduled_date >= datetime('now') ORDER BY posts.scheduled_date LIMIT 10"),
   },
 };
 
@@ -105,7 +105,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '..', 'views'));
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/static', express.static(path.join(__dirname, 'public')));
 
@@ -193,11 +193,11 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 // Videos API
 app.get('/api/videos', (req, res) => {
   const { status } = req.query;
-  res.json(status ? stmts.videos.byStatus.all(status) : stmts.videos.all());
+  res.json(status ? stmts.videos.byStatus.all(status) : stmts.videos.listAll.all());
 });
 
 app.get('/api/videos/:id', (req, res) => {
-  const video = stmts.videos.get(req.params.id);
+  const video = stmts.videos.get.get(req.params.id);
   if (!video) return res.status(404).json({ error: 'Video not found' });
   video.source_ids = JSON.parse(video.source_ids);
   res.json(video);
@@ -206,26 +206,26 @@ app.get('/api/videos/:id', (req, res) => {
 app.post('/api/videos', (req, res) => {
   const { title, description, source_ids, status, publish_date, notes } = req.body;
   const sources = source_ids ? JSON.stringify(source_ids) : '[]';
-  const result = stmts.videos.run(title, description || '', sources, status || 'draft', publish_date || null, notes || '');
+  const result = stmts.videos.create.run(title, description || '', sources, status || 'draft', publish_date || null, notes || '');
   res.json({ id: result.lastInsertRowid, message: 'Video created' });
 });
 
 app.put('/api/videos/:id', (req, res) => {
   const { title, description, source_ids, status, publish_date, tiktok_url, notes } = req.body;
   const sources = source_ids ? (Array.isArray(source_ids) ? JSON.stringify(source_ids) : source_ids) : '[]';
-  stmts.videos.run(title, description || '', sources, status || 'draft', publish_date || null, tiktok_url || '', notes || '', req.params.id);
+  stmts.videos.update.run(title, description || '', sources, status || 'draft', publish_date || null, tiktok_url || '', notes || '', req.params.id);
   res.json({ message: 'Video updated' });
 });
 
 app.delete('/api/videos/:id', (req, res) => {
-  stmts.videos.run(req.params.id);
+  stmts.videos.delete.run(req.params.id);
   res.json({ message: 'Video deleted' });
 });
 
 // Posts API
 app.get('/api/posts', (req, res) => {
   const { status } = req.query;
-  res.json(status ? stmts.posts.byStatus.all(status) : stmts.posts.all());
+  res.json(status ? stmts.posts.byStatus.all(status) : stmts.posts.listAll.all());
 });
 
 app.get('/api/posts/upcoming', (req, res) => {
@@ -233,25 +233,25 @@ app.get('/api/posts/upcoming', (req, res) => {
 });
 
 app.get('/api/posts/:id', (req, res) => {
-  const post = stmts.posts.get(req.params.id);
+  const post = stmts.posts.get.get(req.params.id);
   if (!post) return res.status(404).json({ error: 'Post not found' });
   res.json(post);
 });
 
 app.post('/api/posts', (req, res) => {
   const { video_id, scheduled_date, caption, hashtags, notes } = req.body;
-  const result = stmts.posts.run(video_id, scheduled_date, caption || '', hashtags || '', notes || '');
+  const result = stmts.posts.create.run(video_id, scheduled_date, caption || '', hashtags || '', notes || '');
   res.json({ id: result.lastInsertRowid, message: 'Post scheduled' });
 });
 
 app.put('/api/posts/:id', (req, res) => {
   const { video_id, scheduled_date, status, caption, hashtags, posted_at, notes } = req.body;
-  stmts.posts.run(video_id, scheduled_date, status || 'planned', caption || '', hashtags || '', posted_at || null, notes || '', req.params.id);
+  stmts.posts.update.run(video_id, scheduled_date, status || 'planned', caption || '', hashtags || '', posted_at || null, notes || '', req.params.id);
   res.json({ message: 'Post updated' });
 });
 
 app.delete('/api/posts/:id', (req, res) => {
-  stmts.posts.run(req.params.id);
+  stmts.posts.delete.run(req.params.id);
   res.json({ message: 'Post deleted' });
 });
 
@@ -263,8 +263,8 @@ app.get('/', (req, res) => {
   const stats = { draft: 0, scheduled: 0, published: 0 };
   videoCounts.forEach(v => { stats[v.status] = v.count; });
   stats.totalSources = stmts.sources.list.all().length;
-  stats.totalVideos = stmts.videos.all().length;
-  stats.totalPosts = stmts.posts.all().length;
+  stats.totalVideos = stmts.videos.listAll.all().length;
+  stats.totalPosts = stmts.posts.listAll.all().length;
   stats.upcoming = stmts.posts.upcoming.all();
   res.render('dashboard', { stats });
 });
@@ -279,15 +279,15 @@ app.get('/sources', (req, res) => {
 // Videos page
 app.get('/videos', (req, res) => {
   const { status } = req.query;
-  const videos = status ? stmts.videos.byStatus.all(status) : stmts.videos.all();
+  const videos = status ? stmts.videos.byStatus.all(status) : stmts.videos.listAll.all();
   videos.forEach(v => { v.source_ids = JSON.parse(v.source_ids); });
   res.render('videos', { videos, status: status || 'all', sources: stmts.sources.list.all() });
 });
 
 // Posts/Schedule page
 app.get('/schedule', (req, res) => {
-  const posts = stmts.posts.all();
-  const videos = stmts.videos.all();
+  const posts = stmts.posts.listAll.all();
+  const videos = stmts.videos.listAll.all();
   res.render('schedule', { posts, videos });
 });
 

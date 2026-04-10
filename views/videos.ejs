@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Videos — Ở Đây Có Yên</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<%- include('partials/nav') %>
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Videos</h1>
+    <div class="flex gap-2">
+      <a href="?status=all" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= status==='all' ? 'bg-teal-600 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">Tất cả</a>
+      <a href="?status=draft" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= status==='draft' ? 'bg-amber-500 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">Draft</a>
+      <a href="?status=scheduled" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= status==='scheduled' ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">Scheduled</a>
+      <a href="?status=published" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= status==='published' ? 'bg-green-500 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">Published</a>
+    </div>
+  </div>
+
+  <!-- Create video form -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="font-semibold text-gray-700 mb-4">Tạo Video mới</h2>
+    <form id="videoForm" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Tiêu đề</label>
+          <input type="text" id="vidTitle" placeholder="VD: Sáng yên bình quê hương" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Status</label>
+          <select id="vidStatus" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <option value="draft">Draft</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="published">Published</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Mô tả</label>
+        <textarea id="vidDesc" rows="2" placeholder="Mô tả nội dung video..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Notes</label>
+        <input type="text" id="vidNotes" placeholder="Ghi chú cá nhân..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      </div>
+      <button type="submit" class="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700">Tạo Video</button>
+    </form>
+  </div>
+
+  <!-- Videos list -->
+  <div class="space-y-3">
+    <% if (videos.length === 0) { %>
+      <div class="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-100">
+        <p class="text-lg mb-2">Chưa có video nào</p>
+        <p class="text-sm">Tạo video đầu tiên ở trên</p>
+      </div>
+    <% } else { %>
+      <% videos.forEach(v => { %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center justify-between hover:shadow-md transition-shadow">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-1">
+              <h3 class="text-sm font-semibold text-gray-800"><%= v.title %></h3>
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium
+                <%= v.status === 'draft' ? 'bg-amber-100 text-amber-700' : '' %>
+                <%= v.status === 'scheduled' ? 'bg-blue-100 text-blue-700' : '' %>
+                <%= v.status === 'published' ? 'bg-green-100 text-green-700' : '' %>
+              "><%= v.status %></span>
+            </div>
+            <% if (v.description) { %>
+              <p class="text-xs text-gray-500"><%= v.description %></p>
+            <% } %>
+            <p class="text-xs text-gray-400 mt-1">Created: <%= new Date(v.created_at).toLocaleDateString('vi-VN') %></p>
+          </div>
+          <div class="flex items-center gap-2 ml-4">
+            <% if (v.status === 'published' && v.tiktok_url) { %>
+              <a href="<%= v.tiktok_url %>" target="_blank" class="text-xs text-teal-600 hover:underline">TikTok ↗</a>
+            <% } %>
+            <button onclick="deleteVideo(<%= v.id %>)" class="text-gray-400 hover:text-red-500 text-sm">🗑</button>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</main>
+
+<script>
+document.getElementById('videoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const res = await fetch('/api/videos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: document.getElementById('vidTitle').value,
+      description: document.getElementById('vidDesc').value,
+      status: document.getElementById('vidStatus').value,
+      notes: document.getElementById('vidNotes').value
+    })
+  });
+  if (res.ok) location.reload();
+});
+
+async function deleteVideo(id) {
+  if (!confirm('Xóa video này?')) return;
+  await fetch(`/api/videos/${id}`, { method: 'DELETE' });
+  location.reload();
+}
+</script>
+</body>
+</html>

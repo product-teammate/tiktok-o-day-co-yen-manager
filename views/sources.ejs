@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sources — Ở Đây Có Yên</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<%- include('partials/nav') %>
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Sources</h1>
+    <div class="flex gap-2">
+      <a href="?type=all" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= type==='all' ? 'bg-teal-600 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">Tất cả</a>
+      <a href="?type=video" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= type==='video' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">🎬 Video</a>
+      <a href="?type=image" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= type==='image' ? 'bg-green-600 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">🖼 Ảnh</a>
+      <a href="?type=quote" class="px-3 py-1.5 rounded-lg text-sm font-medium <%= type==='quote' ? 'bg-purple-600 text-white' : 'bg-white border border-gray-200 text-gray-600' %>">💬 Quote</a>
+    </div>
+  </div>
+
+  <!-- Upload / Add section -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="font-semibold text-gray-700 mb-4">Thêm Source mới</h2>
+    <form id="uploadForm" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Loại</label>
+          <select id="srcType" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" onchange="toggleFields()">
+            <option value="video">Video (upload)</option>
+            <option value="image">Hình ảnh (upload)</option>
+            <option value="quote">Câu quote (text)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Tiêu đề</label>
+          <input type="text" id="srcTitle" placeholder="VD: Cảnh đồng quê" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+      <div id="fileField">
+        <label class="block text-sm font-medium text-gray-600 mb-1">File</label>
+        <input type="file" id="srcFile" accept="video/*,image/*" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div id="quoteField" class="hidden">
+        <label class="block text-sm font-medium text-gray-600 mb-1">Nội dung quote</label>
+        <textarea id="srcContent" rows="2" placeholder="Nhập câu nói hay..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Mô tả / Tags</label>
+        <input type="text" id="srcTags" placeholder="VD: thiên nhiên, bình yên, mood nhẹ" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      </div>
+      <button type="submit" class="bg-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-teal-700">Thêm source</button>
+    </form>
+  </div>
+
+  <!-- Sources list -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% if (sources.length === 0) { %>
+      <div class="col-span-full text-center py-12 text-gray-400">
+        <p class="text-lg mb-2">Chưa có source nào</p>
+        <p class="text-sm">Upload video, ảnh hoặc thêm quotes để bắt đầu</p>
+      </div>
+    <% } else { %>
+      <% sources.forEach(s => { %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+          <% if (s.type === 'image' && s.file_path) { %>
+            <div class="h-40 bg-gray-100 overflow-hidden">
+              <img src="/uploads/<%= s.file_path %>" class="w-full h-full object-cover" alt="<%= s.title %>">
+            </div>
+          <% } else if (s.type === 'video' && s.file_path) { %>
+            <div class="h-40 bg-gray-800 flex items-center justify-center">
+              <span class="text-4xl">🎬</span>
+            </div>
+          <% } else if (s.type === 'quote') { %>
+            <div class="h-40 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center p-4">
+              <p class="text-white text-center italic text-sm">"<%= s.content %>"</p>
+            </div>
+          <% } else { %>
+            <div class="h-40 bg-gray-100 flex items-center justify-center">
+              <span class="text-gray-400">No preview</span>
+            </div>
+          <% } %>
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full
+                <%= s.type === 'video' ? 'bg-blue-100 text-blue-700' : '' %>
+                <%= s.type === 'image' ? 'bg-green-100 text-green-700' : '' %>
+                <%= s.type === 'quote' ? 'bg-purple-100 text-purple-700' : '' %>
+              "><%= s.type %></span>
+              <button onclick="deleteSource(<%= s.id %>)" class="text-gray-400 hover:text-red-500 text-xs">🗑</button>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-800 mt-2"><%= s.title %></h3>
+            <% if (s.tags) { %>
+              <p class="text-xs text-gray-400 mt-1"><%= s.tags %></p>
+            <% } %>
+            <p class="text-xs text-gray-400 mt-1"><%= new Date(s.created_at).toLocaleDateString('vi-VN') %></p>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</main>
+
+<script>
+function toggleFields() {
+  const type = document.getElementById('srcType').value;
+  document.getElementById('fileField').classList.toggle('hidden', type === 'quote');
+  document.getElementById('quoteField').classList.toggle('hidden', type !== 'quote');
+}
+
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const type = document.getElementById('srcType').value;
+  const title = document.getElementById('srcTitle').value;
+  const tags = document.getElementById('srcTags').value;
+
+  if (type === 'quote') {
+    const content = document.getElementById('srcContent').value;
+    const res = await fetch('/api/sources', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, title, content, tags })
+    });
+    if (res.ok) location.reload();
+  } else {
+    const file = document.getElementById('srcFile').files[0];
+    if (!file) return alert('Chọn file!');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('type', type);
+    fd.append('title', title || file.name);
+    fd.append('tags', tags);
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    if (res.ok) location.reload();
+  }
+});
+
+async function deleteSource(id) {
+  if (!confirm('Xóa source này?')) return;
+  await fetch(`/api/sources/${id}`, { method: 'DELETE' });
+  location.reload();
+}
+</script>
+</body>
+</html>

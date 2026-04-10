@@ -16,69 +16,55 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Tổng Sources</p>
-      <p class="text-3xl font-bold text-gray-800"><%= stats.sources.total %></p>
-      <p class="text-xs text-gray-400 mt-1">
-        <span class="text-blue-500"><%= stats.sources.videos %> video</span> ·
-        <span class="text-green-500"><%= stats.sources.images %> ảnh</span> ·
-        <span class="text-purple-500"><%= stats.sources.quotes %> quote</span>
-      </p>
+      <p class="text-3xl font-bold text-gray-800"><%= stats.totalSources %></p>
+      <p class="text-xs text-gray-400 mt-1">Video, ảnh, quotes</p>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Draft</p>
-      <p class="text-3xl font-bold text-amber-500"><%= stats.tiktokVideos.draft %></p>
+      <p class="text-3xl font-bold text-amber-500"><%= stats.draft %></p>
       <p class="text-xs text-gray-400 mt-1">Video chưa xuất bản</p>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Scheduled</p>
-      <p class="text-3xl font-bold text-blue-500"><%= stats.tiktokVideos.scheduled %></p>
+      <p class="text-3xl font-bold text-blue-500"><%= stats.scheduled %></p>
       <p class="text-xs text-gray-400 mt-1">Sắp đăng</p>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
       <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Published</p>
-      <p class="text-3xl font-bold text-green-500"><%= stats.tiktokVideos.published %></p>
+      <p class="text-3xl font-bold text-green-500"><%= stats.published %></p>
       <p class="text-xs text-gray-400 mt-1">Đã đăng lên TikTok</p>
     </div>
   </div>
 
   <div class="grid md:grid-cols-2 gap-6">
-    <!-- Videos gần đây -->
+    <!-- Tổng quan -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-      <div class="flex items-center justify-between px-5 py-4 border-b">
-        <h2 class="font-semibold text-gray-700">Videos gần đây</h2>
-        <a href="/videos" class="text-teal-600 text-sm hover:underline">Xem tất cả →</a>
+      <div class="px-5 py-4 border-b">
+        <h2 class="font-semibold text-gray-700">Tổng quan</h2>
       </div>
-      <div class="divide-y">
-        <% if (recentVideos.length === 0) { %>
-          <p class="px-5 py-4 text-gray-400 text-sm">Chưa có video nào. <a href="/videos" class="text-teal-600 hover:underline">Tạo ngay</a></p>
-        <% } else { %>
-          <% recentVideos.forEach(v => { %>
-            <div class="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
-              <div>
-                <p class="text-sm font-medium text-gray-800"><%= v.title %></p>
-                <p class="text-xs text-gray-400"><%= new Date(v.created_at).toLocaleDateString('vi-VN') %></p>
-              </div>
-              <span class="text-xs px-2 py-0.5 rounded-full font-medium
-                <%= v.status === 'draft' ? 'bg-amber-100 text-amber-700' : '' %>
-                <%= v.status === 'scheduled' ? 'bg-blue-100 text-blue-700' : '' %>
-                <%= v.status === 'published' ? 'bg-green-100 text-green-700' : '' %>
-              "><%= v.status %></span>
-            </div>
-          <% }) %>
-        <% } %>
+      <div class="px-5 py-4 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Tổng videos</span>
+          <span class="font-medium"><%= stats.totalVideos %></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Tổng posts đã lên lịch</span>
+          <span class="font-medium"><%= stats.totalPosts %></span>
+        </div>
       </div>
     </div>
 
     <!-- Lịch đăng tới -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center justify-between px-5 py-4 border-b">
-        <h2 class="font-semibold text-gray-700">Lịch đăng tới (<%= stats.posts.upcoming %>)</h2>
-        <a href="/posts" class="text-teal-600 text-sm hover:underline">Xem tất cả →</a>
+        <h2 class="font-semibold text-gray-700">Lịch đăng tới</h2>
+        <a href="/schedule" class="text-teal-600 text-sm hover:underline">Xem tất cả →</a>
       </div>
       <div class="divide-y">
-        <% if (upcomingPosts.length === 0) { %>
-          <p class="px-5 py-4 text-gray-400 text-sm">Chưa có lịch đăng. <a href="/posts" class="text-teal-600 hover:underline">Lên lịch</a></p>
+        <% if (!stats.upcoming || stats.upcoming.length === 0) { %>
+          <p class="px-5 py-4 text-gray-400 text-sm">Chưa có lịch đăng. <a href="/schedule" class="text-teal-600 hover:underline">Lên lịch →</a></p>
         <% } else { %>
-          <% upcomingPosts.forEach(p => { %>
+          <% stats.upcoming.forEach(p => { %>
             <div class="px-5 py-3 hover:bg-gray-50">
               <p class="text-sm font-medium text-gray-800"><%= p.video_title || '(Chưa gắn video)' %></p>
               <p class="text-xs text-gray-400"><%= new Date(p.scheduled_date).toLocaleString('vi-VN') %></p>
@@ -90,14 +76,14 @@
   </div>
 
   <!-- Quick actions -->
-  <div class="mt-6 flex gap-3">
+  <div class="mt-6 flex flex-wrap gap-3">
     <a href="/sources" class="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
       <span>📁</span> Upload Source
     </a>
     <a href="/videos" class="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
       <span>🎬</span> Tạo Video
     </a>
-    <a href="/posts" class="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+    <a href="/schedule" class="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
       <span>📅</span> Lên Lịch
     </a>
   </div>
